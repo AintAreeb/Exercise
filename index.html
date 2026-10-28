@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Daily Routine</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0F1A21">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Routine">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&display=swap">
+<style>
+:root{--bg:#EEF3F6;--card:#FFFFFF;--ink:#13222B;--mute:#51636E;--line:#D3DDE3;--p1:#7A4FD1;--p2:#D98A00;--p3:#1F6FEB;--p4:#0E9272;--tint:#F5F8FA}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0F1A21;--card:#17262F;--ink:#E8F0F4;--mute:#9DB0BB;--line:#2A3E49;--p1:#A98BEF;--p2:#F2B03A;--p3:#6AA2FF;--p4:#3FD1A8;--tint:#1B2D38;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0F1A21;--card:#17262F;--ink:#E8F0F4;--mute:#9DB0BB;--line:#2A3E49;--p1:#A98BEF;--p2:#F2B03A;--p3:#6AA2FF;--p4:#3FD1A8;--tint:#1B2D38;color-scheme:dark}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font:400 15px/1.4 "Bricolage Grotesque",system-ui,-apple-system,"Segoe UI",sans-serif;overflow:hidden}
+main{height:100dvh;max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:8px;padding:calc(10px + env(safe-area-inset-top,0px)) 14px calc(10px + env(safe-area-inset-bottom,0px))}
+.top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+h1{margin:0;font-size:clamp(20px,3.4vh,26px);line-height:1.1;font-weight:800;letter-spacing:-.02em}
+.sub{margin:0;color:var(--mute);font-size:12.5px}
+.tipbtn{flex:none;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:7px 13px;font:600 13px inherit;font-family:inherit;cursor:pointer}
+.bar{display:flex;height:22px;border-radius:8px;overflow:hidden;gap:2px;flex:none}
+.bar div{display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600;font-size:11.5px;min-width:0;white-space:nowrap}
+.days{display:flex;gap:4px;flex:none}
+.days span{flex:1;text-align:center;padding:4px 0;border-radius:8px;font-weight:600;font-size:11.5px;background:var(--p4);color:#fff}
+.days span.off{background:var(--tint);color:var(--mute);border:1px dashed var(--line)}
+.phases{flex:1;min-height:0;display:flex;flex-direction:column;gap:8px}
+section{flex:calc(var(--r) + 1.3) 1 0;background:var(--card);border:1px solid var(--line);border-top:4px solid var(--c);border-radius:12px;padding:6px 8px 7px;display:flex;flex-direction:column;gap:5px;min-height:0;overflow:hidden}
+.ph{display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding:0 2px}
+.ph h2{margin:0;font-size:14.5px;font-weight:800;color:var(--c)}
+.ph b{font-size:12px;color:var(--mute);font-weight:600}
+.grid{flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(var(--r),minmax(0,1fr));gap:5px}
+.chip{display:flex;align-items:center;justify-content:space-between;gap:6px;text-align:left;min-height:0;height:100%;overflow:hidden;padding:0 9px;border:1px solid var(--line);border-left:4px solid var(--c);border-radius:9px;background:var(--tint);color:var(--ink);font:600 12.5px/1.15 inherit;font-family:inherit;cursor:pointer}
+.chip span{flex:1;min-width:0;font-size:12px;line-height:1.1;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.chip:active{transform:scale(.98)}
+.chip:focus-visible,.tipbtn:focus-visible,.sheet button:focus-visible{outline:3px solid var(--c,var(--p3));outline-offset:2px}
+.chip i{flex:none;font-style:normal;font-size:11.5px;color:var(--c);font-weight:800;white-space:nowrap;text-align:right}
+/* sheet */
+.scrim{position:fixed;inset:0;background:rgba(5,12,16,.5);opacity:0;pointer-events:none;transition:opacity .18s}
+.scrim.on{opacity:1;pointer-events:auto}
+.sheet{position:fixed;left:0;right:0;bottom:0;max-width:560px;margin:0 auto;background:var(--card);border-top:5px solid var(--c,var(--p3));border-radius:18px 18px 0 0;padding:14px 16px calc(16px + env(safe-area-inset-bottom,0px));max-height:82dvh;overflow:auto;transform:translateY(105%);transition:transform .22s ease-out;box-shadow:0 -8px 30px rgba(0,0,0,.25)}
+.sheet.on{transform:none}
+@media (prefers-reduced-motion:reduce){.sheet,.scrim{transition:none}}
+.sh-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.sh-head h3{margin:0;font-size:20px;line-height:1.2;font-weight:800}
+.src{color:var(--mute);font-size:13px;margin:2px 0 0}
+.close{flex:none;border:0;background:var(--tint);color:var(--ink);width:34px;height:34px;border-radius:50%;font-size:18px;cursor:pointer}
+.dose{display:inline-block;margin:10px 0 4px;background:var(--c);color:#fff;border-radius:999px;padding:4px 12px;font-weight:600;font-size:13px}
+.sheet p{margin:8px 0 0}
+.k{font-weight:600;color:var(--c)}
+.alt{background:var(--tint);border-radius:9px;padding:9px 11px;margin-top:10px;font-size:14px}
+.nav{display:flex;gap:8px;margin-top:14px}
+.nav button{flex:1;border:1px solid var(--line);background:var(--tint);color:var(--ink);border-radius:10px;padding:10px;font:600 14px inherit;font-family:inherit;cursor:pointer}
+.tipitem{background:var(--tint);border-radius:10px;padding:10px 12px;margin-top:8px;font-size:14.5px}
+.tipitem b{display:block}
+</style>
+</head>
+<body>
+<main>
+  <div class="top">
+    <div>
+      <h1>Your daily routine</h1>
+      <p class="sub">35–40 min · 5 days a week · tap an exercise</p>
+    </div>
+    <button class="tipbtn" id="tipbtn" type="button">Tips</button>
+  </div>
+  <div class="bar" id="bar"></div>
+  <div class="days"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span class="off">Fri</span><span class="off">Sat</span><span>Sun</span></div>
+  <div class="phases" id="app"></div>
+</main>
+
+<div class="scrim" id="scrim"></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="shTitle"></div>
+
+<script>
+var P=[
+{t:'1 · Posture, neck & jaw',m:'~7–8 min',c:'var(--p1)',w:7.5,rule:'Do these in order, right after waking up or before the strength circuit.',e:[
+['Chin pucker','Double chin lip pucker','Dr.Cracks','20 reps','Tilt your head up and pucker your lips.','Sit or stand tall. Tilt your head back until you feel the stretch under your chin, pucker your lips toward the ceiling, then relax. That is 1 rep.','No equipment needed.'],
+['Pen jaw lift','Pen jaw line lift','Pierre Dalati','100 quick reps','Bite a pen sideways and lift your jaw up and down.','Hold a pen horizontally between your teeth. Keep your lips relaxed and move your jaw up and down in quick, small motions.','Any clean pen, pencil or spoon handle works.'],
+['Pen 3D face','Pen 3D face movement','Pierre Dalati','100 quick reps','Bite the pen and move your jaw gently side to side.','Keep the pen between your teeth and slide your jaw left and right smoothly. Go gently and stop if your jaw clicks or hurts.','Any clean pen, pencil or spoon handle works.'],
+['Pen lip hold','Pen lip hold','Pierre Dalati','Hold 1 min','Hold the pen with your lips only.','Pinch the pen with your lips, not your teeth. Breathe through your nose and keep your face relaxed.','Any pen, pencil or spoon handle works.'],
+['Lip hold + tilt','Pen lip hold + head tilt','Pierre Dalati','Hold 1 min','Hold the pen with your lips and tilt your head up.','Same lip hold, but tilt your head back so your chin points to the ceiling. Keep the pen level.','Any pen, pencil or spoon handle works.'],
+['Hunch neck ext.','Hunch neck extension','Pierre Dalati','10 sec × 3 sets','Sit at the bed edge, lean back with arms extended.','Sit on the edge of a bed with your arms straight behind you, hands on the mattress. Lean back, let your chest open and your head drop back gently. Hold 10 seconds, rest, repeat 3 times.','No bed edge? Use a sturdy chair seat or the floor with your hands behind you.'],
+['Ear touch & clasp','Ear touch & hand clasp','Exercise Universe','50–100 reps','Touch your ears, then clasp your hands behind your back.','Bring your hands to your ears with elbows wide. Then clasp your hands behind your back, squeeze your shoulder blades and lift your chest. Repeat.','No equipment needed.'],
+['Shoulder rotations','External shoulder rotations','Exercise Universe','50–100 reps','Rotate your shoulders outward.','Keep your elbows bent at your sides. Rotate your forearms outward, squeezing your shoulder blades back, then return.','No equipment needed. A light resistance band makes it harder if you have one.']]},
+{t:'2 · Dynamic warm-up',m:'~3 min',c:'var(--p2)',w:3,rule:'Move smoothly. This prepares your shoulders, knees and hips.',e:[
+['Over-and-backs','Over-and-backs','Jeremy Ethier','15 reps','Use a towel, broomstick or resistance band.','Hold the towel wide in front of your thighs with straight arms. Raise it overhead and down behind you, then reverse. Hold wider if it feels tight.','No band? A towel, broomstick, belt or rolled shirt all work.'],
+['High pulls','High pulls','Exercise Universe','30 quick reps','Drive your elbows up and back.','Start with hands at your waist. Pull your elbows up high and back past your shoulders in a fast, controlled motion.','No equipment needed.'],
+['Bodyweight squats','Bodyweight squats','Gentle','10 slow reps','Warm up your knees and hips.','Feet shoulder-width apart. Sit your hips back and down, keep your chest tall and your heels on the floor, then stand.','No equipment needed.']]},
+{t:'3 · Full-body strength circuit',m:'~20–22 min',c:'var(--p3)',w:21,rule:'Do 3 total rounds. Rest 45–60 seconds between exercises and 90 seconds between rounds.',e:[
+['Push-ups','Push-ups (normal or deficit)','KMLX / Bro Pump','12–15 reps','Chest, shoulders and triceps.','Hands under your shoulders, body in a straight line. Lower your chest to the floor, then press up. For deficit push-ups, rest your hands on raised surfaces so your chest dips lower.','Deficit without equipment: put each hand on a stack of books. Too hard? Do them on your knees.'],
+['Pike push-ups','Pike push-ups','Bro Pump / KMLX','8–12 reps','Overhead shoulder pressing.','Make an upside-down V with your hips high. Bend your elbows to lower the top of your head toward the floor, then press back up.','No equipment needed. For more challenge, raise your feet on a chair.'],
+['Split / tempo squats','Bulgarian split squats or tempo squats','Bro Pump','10–12 per leg, or 15 slow squats','Quads and glutes.','Split squat: put your back foot on a raised surface, drop your back knee straight down, then drive up through the front heel. Tempo squat: take 3 seconds going down, then stand.','No bench? Use a chair, sofa or bed for your back foot. Or just do the 15 slow tempo squats.'],
+['Backpack rows','Backpack rows','Bro Pump','12–15 reps','Upper back thickness and lat strength.','Load a backpack with books. Hinge forward with a flat back, let the bag hang, then pull it to your lower ribs and lower it slowly.','No dumbbells needed. A water jug or a heavy bag also works.'],
+['Hip flexor stretch','Hip flexor lunge stretch','Pierre Dalati / Jeremy Ethier','10–15 sec per side','Releases tight hip flexors and anterior pelvic tilt.','Kneel on one knee with the other foot forward. Tuck your tailbone under and squeeze the glute of the back leg. Lean forward slightly until you feel the front of the hip stretch.','Pad your back knee with a folded towel or cushion.']]},
+{t:'4 · Core, posture & glute finisher',m:'~5 min',c:'var(--p4)',w:5,rule:'Do these as a final circuit with minimal rest between movements.',e:[
+['Glute bridges','Glute bridges','Jeremy Ethier','1 set of 15–20','Squeeze your glutes hard at the top.','Lie on your back with knees bent. Push through your heels, lift your hips until your body is straight, squeeze, then lower.','No equipment needed. Make it harder by going one leg at a time.'],
+['Back squeezes','Double-arm back squeezes','Exercise Universe','1 set of 30–50','Both arms squeeze your shoulder blades together.','Stand tall with arms bent at your sides. Pull both elbows back and squeeze your shoulder blades together, then release.','No equipment needed.'],
+['Reverse snow angels','Reverse snow angels','Bro Pump','1 set of 12–15 slow reps','Lie on your stomach.','Lie face down with arms by your sides and palms down. Lift your chest slightly and sweep your arms in a wide arc overhead, then back to your sides, slowly.','No equipment needed.'],
+['Plank / hollow hold','Plank or hollow body hold','KMLX / Bro Pump','Hold 45–60 sec','Core.','Plank: forearms on the floor, body in a straight line, abs tight. Hollow hold: lie on your back, lift your shoulders and legs off the floor with your lower back pressed down.','Use a towel or mat under your elbows or back. Too hard? Plank from your knees.']]}];
+
+var DOSE={
+'Chin pucker':'20×','Pen jaw lift':'100×','Pen 3D face':'100×','Pen lip hold':'1 min','Lip hold + tilt':'1 min','Hunch neck ext.':'3×10s','Ear touch & clasp':'50–100×','Shoulder rotations':'50–100×',
+'Over-and-backs':'15×','High pulls':'30×','Bodyweight squats':'10×',
+'Push-ups':'3×12–15','Pike push-ups':'3×8–12','Split / tempo squats':'3×10–12','Backpack rows':'3×12–15','Hip flexor stretch':'10–15s',
+'Glute bridges':'15–20×','Back squeezes':'30–50×','Reverse snow angels':'12–15×','Plank / hollow hold':'45–60s'};
+
+var TIPS=[['Progression','When 15 push-ups or rows feel easy, slow down: 4 seconds down, 1 second pause. Or add a few heavy books to your backpack.'],['Hydration','Keep a water bottle within reach, especially during Phase 3.'],['Rest days','Take Friday and Saturday off every week so your muscles and joints can recover.']];
+
+var bar=document.getElementById('bar'),app=document.getElementById('app'),sheet=document.getElementById('sheet'),scrim=document.getElementById('scrim'),flat=[],cur=-1,opener=null,h='';
+P.forEach(function(p,pi){
+  bar.insertAdjacentHTML('beforeend','<div style="flex:'+p.w+';background:'+p.c+'">'+(p.w>2?p.m.replace('~',''):'')+'</div>');
+  var rows=Math.ceil(p.e.length/2);
+  h+='<section style="--c:'+p.c+';--r:'+rows+'"><div class="ph"><h2>'+p.t+'</h2><b>'+p.m+'</b></div><div class="grid">';
+  p.e.forEach(function(x){
+    flat.push({p:p,x:x});
+    h+='<button type="button" class="chip" data-i="'+(flat.length-1)+'"><span>'+x[0]+'</span><i>'+(DOSE[x[0]]||'')+'</i></button>';
+  });
+  h+='</div></section>';
+});
+app.innerHTML=h;
+
+function open_(){sheet.classList.add('on');scrim.classList.add('on');sheet.setAttribute('aria-hidden','false')}
+function close_(){sheet.classList.remove('on');scrim.classList.remove('on');sheet.setAttribute('aria-hidden','true');if(opener)opener.focus()}
+function showEx(i){
+  cur=i;var o=flat[i],p=o.p,x=o.x;
+  sheet.style.setProperty('--c',p.c);
+  sheet.innerHTML='<div class="sh-head"><div><h3 id="shTitle">'+x[1]+'</h3><p class="src" style="margin:2px 0 0">'+x[2]+'</p></div><button class="close" type="button" aria-label="Close">✕</button></div>'+
+  '<span class="dose">'+x[3]+'</span>'+
+  '<p><span class="k">Goal: </span>'+x[4]+'</p><p><span class="k">How: </span>'+x[5]+'</p>'+
+  '<div class="alt"><span class="k">No-gym option: </span>'+x[6]+'</div>'+
+  '<div class="alt" style="margin-top:8px"><span class="k">Phase note: </span>'+p.rule+'</div>'+
+  '<div class="nav"><button type="button" data-n="-1"'+(i===0?' disabled style="opacity:.4"':'')+'>← Previous</button><button type="button" data-n="1"'+(i===flat.length-1?' disabled style="opacity:.4"':'')+'>Next →</button></div>';
+  open_();
+  sheet.querySelector('.close').focus();
+}
+function showTips(){
+  sheet.style.setProperty('--c','var(--p3)');
+  var t='<div class="sh-head"><h3 id="shTitle">Tips for consistency</h3><button class="close" type="button" aria-label="Close">✕</button></div>';
+  TIPS.forEach(function(x){t+='<div class="tipitem"><b>'+x[0]+'</b>'+x[1]+'</div>'});
+  sheet.innerHTML=t;open_();sheet.querySelector('.close').focus();
+}
+app.addEventListener('click',function(e){var b=e.target.closest('.chip');if(b){opener=b;showEx(+b.dataset.i)}});
+document.getElementById('tipbtn').addEventListener('click',function(e){opener=e.currentTarget;showTips()});
+sheet.addEventListener('click',function(e){
+  if(e.target.closest('.close')){close_();return}
+  var n=e.target.closest('[data-n]');
+  if(n&&!n.disabled){showEx(cur+(+n.dataset.n));sheet.scrollTop=0}
+});
+scrim.addEventListener('click',close_);
+document.addEventListener('keydown',function(e){if(e.key==='Escape'&&sheet.classList.contains('on'))close_()});
+if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})})}
+</script>
+</body>
+</html>
