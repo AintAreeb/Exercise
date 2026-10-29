@@ -143,6 +143,7 @@ h1{margin:0;font-size:clamp(20px,3.4vh,26px);line-height:1.1;font-weight:600;let
 .qrow button{flex:1;border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:10px;padding:10px 2px;font:400 14px inherit;cursor:pointer}
 .addf{display:flex;gap:6px;flex:none}
 .addf input{flex:1;min-width:0;border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:10px;padding:10px 12px;font:400 15px inherit}
+.addf select{flex:none;max-width:36%;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;padding:0 8px;font:400 14px inherit}
 .addf button{flex:none;border:0;background:var(--ink);color:var(--bg);border-radius:10px;padding:0 18px;font:600 14px inherit;cursor:pointer}
 .empty{color:var(--mute);font-size:13.5px;padding:4px 2px}
 .clock{position:relative;height:14px;border-radius:7px;background:var(--tint);overflow:hidden;flex:none}
@@ -168,6 +169,10 @@ h1{margin:0;font-size:clamp(20px,3.4vh,26px);line-height:1.1;font-weight:600;let
 .hsec .mrow{border-top:1px solid var(--line);padding:6px 0}
 .hsec .mrow:first-of-type{border-top:0}
 .hsec .items{color:var(--mute);font-size:12.5px;margin:0 0 4px}
+.unl{flex:none;display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px dashed var(--mute);border-radius:14px;padding:12px 14px}
+.unl .nm{font-weight:600;font-size:15.5px}
+.unl .sb{color:var(--mute);font-size:12px;margin-top:1px}
+.unl .st{font-size:22px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
 </style>
 </head>
 <body>
@@ -384,8 +389,9 @@ function showChecklist(first){
       sc[2].forEach(function(it){t+=row(!!D.it[itemKey(id,it[0])],'data-k="'+esc(it[0])+'"',it[0],it[1])});
     });
   }
-  var cu=L.filter(function(i){return i.c});
+  var cu=L.filter(function(i){return i.c&&i.g==null});
   if(cu.length){t+='<div class="chead" style="--c:'+b.c+'">Your tasks</div>';cu.forEach(function(i){t+='<div class="rw">'+row(!!D.it[itemKey(id,i.n)],'data-k="'+esc(i.n)+'"',i.n,'')+'<button type="button" class="del" data-del="'+esc(i.n)+'" aria-label="Remove '+esc(i.n)+'">✕</button></div>'})}
+  (CG[id]||[]).forEach(function(g){if(!g.items.length)return;t+='<div class="chead" style="--c:'+b.c+'">'+esc(g.n)+'</div>';g.items.forEach(function(n){t+='<div class="rw">'+row(!!D.it[itemKey(id,n)],'data-k="'+esc(n)+'"',n,'')+'<button type="button" class="del" data-del="'+esc(n)+'" aria-label="Remove '+esc(n)+'">✕</button></div>'})});
   t+='<form class="addf" id="chkf" style="margin-top:16px"><input id="chki" type="text" placeholder="Add checklist item" aria-label="Add checklist item" maxlength="60" autocomplete="off"><button type="submit">Add</button></form>';
   t+='<div class="nav"><button type="button" data-reset="1">Reset today</button></div>';
   sheet.innerHTML=t;
@@ -395,7 +401,7 @@ sheet.addEventListener('click',function(e){
   var c=e.target.closest('[data-t]');
   if(c){var i=+c.dataset.t;if(S.done[i]!=null)delete S.done[i];else S.done[i]=0;save();renderBlock();showChecklist(false);return}
   c=e.target.closest('[data-del]');
-  if(c){var dn_=c.dataset.del;CU[curB]=(CU[curB]||[]).filter(function(x){return x!==dn_});delete D.it[itemKey(curB,dn_)];csave();dsave();renderBlock();showChecklist(false);return}
+  if(c){var dn_=c.dataset.del;removeCustom(curB,dn_);dsave();renderBlock();showChecklist(false);return}
   c=e.target.closest('[data-x]');
   if(c){var xv=+c.dataset.x,kx=T+'|'+curB;if(xv===0)delete PL[kx];else{var nx=(PL[kx]||0)+xv;if(hrsOf(curB)+xv/60<.25){return}if(nx===0)delete PL[kx];else PL[kx]=nx}psave();renderBlock();showExtend();return}
   c=e.target.closest('[data-q]');
@@ -430,15 +436,17 @@ var SCH={
 wk:[['sleep',6],['college',6.5],['misc',3.5],['prayers',.5],['exercise',.5],['scholar',100/60],['study',5],['reserve',20/60]],
 we:[['sleep',11],['misc',5],['prayers',1],['scholar',1.5],['study',5],['reserve',.5]]};
 var PKEY='day-plan-v1',PL={};
-var DKEY='day-state-v1',CKEY='day-custom-v1',D,CU={},T=(new Date().getDay()>=5)?'we':'wk',curB=null,btk=null;
+var DKEY='day-state-v1',CKEY='day-custom-v1',D,CU={},CG={},GKEY='day-groups-v1',curG=-1,T=(new Date().getDay()>=5)?'we':'wk',curB=null,btk=null;
 var homeEl=document.getElementById('home'),bEl=document.getElementById('vBlock');
 
-function dload(){try{PL=JSON.parse(localStorage.getItem(PKEY))||{}}catch(e){PL={}}try{D=JSON.parse(localStorage.getItem(DKEY))}catch(e){D=null}if(D&&D.date&&D.date!==today())rollOver();else if(!D||!D.date)D=freshDay();if(!D.t)D.t={};if(!D.seg)D.seg=[];try{CU=JSON.parse(localStorage.getItem(CKEY))||{}}catch(e){CU={}}}
+function dload(){try{PL=JSON.parse(localStorage.getItem(PKEY))||{}}catch(e){PL={}}try{D=JSON.parse(localStorage.getItem(DKEY))}catch(e){D=null}if(D&&D.date&&D.date!==today())rollOver();else if(!D||!D.date)D=freshDay();if(!D.t)D.t={};if(!D.seg)D.seg=[];try{CU=JSON.parse(localStorage.getItem(CKEY))||{}}catch(e){CU={}}try{CG=JSON.parse(localStorage.getItem(GKEY))||{}}catch(e){CG={}}}
 function dsave(){D._u=Date.now();try{localStorage.setItem(DKEY,JSON.stringify(D))}catch(e){}if(typeof qsync==='function')qsync()}
 function csave(){try{localStorage.setItem(CKEY,JSON.stringify(CU))}catch(e){}}
+function gsave(){try{localStorage.setItem(GKEY,JSON.stringify(CG))}catch(e){}}
+function removeCustom(id,n){CU[id]=(CU[id]||[]).filter(function(x){return x!==n});(CG[id]||[]).forEach(function(g){g.items=g.items.filter(function(x){return x!==n})});delete D.it[itemKey(id,n)];csave();gsave()}
 function bs(id){return D.b[id]||(D.b[id]={spent:0,run:null,done:false,man:[]})}
 function manMs(id){return(bs(id).man||[]).reduce(function(a,e){return a+e.m*60000},0)}
-function spentMs(id,now){var s=bs(id);return s.spent+manMs(id)+(s.run?(now||Date.now())-s.run:0)}
+function spentMs(id,now){var s=bs(id);return Math.max(0,s.spent+manMs(id)+(s.run?(now||Date.now())-s.run:0))}
 function fmtH(h){var m=Math.round(h*60);if(m<60)return m+' min';return Math.floor(m/60)+' h'+(m%60?' '+m%60+' min':'')}
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
 function noteOf(id){var b=BL[id];return b.note[T]||b.note.wk}
@@ -466,11 +474,11 @@ function restorePresets(id){
   var f=function(){Object.keys(HID).forEach(function(k){if(k.indexOf(id+'|')===0)delete HID[k]})};
   if(BL[id].ex)remapDone(f);else{f();hsave()}
 }
-function listOf(id){var o=[];secsOf(id).forEach(function(sc){sc[2].forEach(function(it){o.push({n:it[0],d:it[1]||'',c:0})})});(CU[id]||[]).forEach(function(n){o.push({n:n,d:'',c:1})});return o}
+function listOf(id){var o=[];secsOf(id).forEach(function(sc){sc[2].forEach(function(it){o.push({n:it[0],d:it[1]||'',c:0})})});(CU[id]||[]).forEach(function(n){o.push({n:n,d:'',c:1,g:null})});(CG[id]||[]).forEach(function(g,gi){g.items.forEach(function(n){o.push({n:n,d:'',c:1,g:gi})})});return o}
 function itemKey(id,name){return T+'|'+id+'|'+name}
 function isDone(id){
   if(bs(id).done)return true;
-  if(BL[id].ex)return cnt()===flat.length&&(CU[id]||[]).every(function(n){return D.it[itemKey(id,n)]});
+  if(BL[id].ex)return cnt()===flat.length&&listOf(id).filter(function(i){return i.c}).every(function(i){return D.it[itemKey(id,i.n)]});
   return false;
 }
 function stopRun(k,s,now){if(!s.run)return;s.spent+=now-s.run;(D.seg=D.seg||[]).push({id:k,s:s.run,e:now});if(k==='sleep')(s.sess=s.sess||[]).push({s:s.run,e:now});s.run=null}
@@ -513,6 +521,11 @@ function ledger(now){
   return{net:net,rLeft:rLeft,mLeft:mLeft};
 }
 function colOf(id){return 'hsl('+(Object.keys(BL).indexOf(id)*47+20)+',35%,55%)'}
+/* Unlogged time: a separate, always-running bucket = time elapsed today minus everything tracked or logged by hand. */
+function trackedMs(now){return Object.keys(BL).reduce(function(a,id){return a+spentMs(id,now)},0)}
+function unloggedMs(now){now=now||Date.now();return Math.max(0,now-dayStart()-trackedMs(now))}
+function fmHM(ms){var m=Math.floor(ms/60000);return Math.floor(m/60)+':'+('0'+m%60).slice(-2)}
+function tickUnl(){var el=document.getElementById('unlVal');if(el&&!homeEl.hidden)el.textContent=fmt(unloggedMs())}
 function renderClock(now,LG){
   var st=dayStart(),W=864e5,en=st+W,sg=(D.seg||[]).slice(),h='',tr=0,run=null;
   Object.keys(D.b).forEach(function(k){if(D.b[k].run){run=k;sg.push({id:k,s:D.b[k].run,e:now})}});
@@ -522,7 +535,7 @@ function renderClock(now,LG){
   });
   h+='<b class="nowm" style="left:'+(now-st)/W*100+'%"></b>';
   document.getElementById('clock').innerHTML=h;
-  document.getElementById('sumNow').textContent=run?'Now: '+BL[run].n+' ● '+fmt(spentMs(run,now)):'Nothing running · '+fm(Math.max(0,now-st-tr)/60000)+' untracked';
+  document.getElementById('sumNow').textContent=run?'Now: '+BL[run].n+' ● '+fmt(spentMs(run,now)):'Nothing running';
   document.getElementById('sumLed').textContent='Reserve '+fm(LG.rLeft)+' · Misc '+fm(LG.mLeft);
 }
 function ledHtml(id,now){
@@ -565,12 +578,13 @@ function renderDay(){
     html+='<button type="button" class="card'+(dn?' done':'')+'" style="--c:'+b.c+'" data-b="'+id+'"><span class="tx"><div class="nm">'+esc(b.n)+'</div><div class="sb">'+(id==='reserve'?fm(LG.rLeft)+' left':id==='misc'?fm(LG.mLeft)+' left':fmtH(hrs))+' · '+esc(noteOf(id))+'</div><div class="pg"><i style="width:'+pct+'%"></i></div></span><span class="st">'+st+'</span></button>';
   });
   document.getElementById('dayBar').innerHTML=bar;
-  document.getElementById('dayList').innerHTML=html;
+  var unlHtml='<div class="unl" role="status"><span><div class="nm">Unlogged time</div><div class="sb">Runs all day when nothing is selected · logging time elsewhere takes it from here</div></span><span class="st" id="unlVal">'+fmt(unloggedMs(now))+'</span></div>';
+  document.getElementById('dayList').innerHTML=unlHtml+html;
   renderClock(now,LG);homeScore();document.getElementById('sumDone').textContent=done+' of '+sch.length+' blocks done';
   document.getElementById('sumHrs').textContent=(+total.toFixed(2))+' h planned'+(total<24?' (+ '+(+(24-total).toFixed(2))+' h open)':'');
 }
 function openBlock(id){
-  curB=id;show('block');renderBlock();
+  curB=id;curG=-1;show('block');renderBlock();
   btk=setInterval(tickBlock,1000);
 }
 function xtra(id){return PL[T+'|'+id]||0}
@@ -589,7 +603,7 @@ function renderBlock(){
   var t='<div class="top"><div class="tl"><button class="back" type="button" data-a="back" aria-label="Back to your day">‹</button><div><h1>'+esc(b.n)+'</h1><p class="sub">'+esc(sub)+'</p></div></div>';
   t+='<div class="btns">'+'<button class="tipbtn" type="button" data-a="chk">Checklist'+(total?' '+dn+'/'+total:'')+'</button>'+(ex?'<button class="tipbtn" type="button" data-a="tips">Tips</button>':'')+'</div></div>';
   t+='<div class="bscroll" style="--c:'+b.c+'">';
-  t+='<div class="tbox"><div class="rtop"><div class="lbl">Time spent · planned '+fmtH(hrs)+'</div><button type="button" class="lnk" data-a="ext">Extend</button></div><div class="big" id="bT">'+fmt(sp)+'</div><div class="pg"><i id="bP" style="width:'+Math.min(100,sp/(hrs*3600000)*100)+'%"></i></div><div class="trow"><button type="button" class="main" data-a="toggle">'+(id==='sleep'?(s.run?'I’m awake':'Start sleep'):(s.run?'Pause':(sp>0?'Resume':'Start')))+'</button><button type="button" data-a="addt">+ Time</button><button type="button" data-a="reset">Reset</button></div>'+manLog(id)+'</div>'+ledHtml(id,now);
+  t+='<div class="tbox"><div class="rtop"><div class="lbl">Time spent · planned '+fmtH(hrs)+'</div><button type="button" class="lnk" data-a="ext">Extend</button></div><div class="big" id="bT">'+fmt(sp)+'</div><div class="pg"><i id="bP" style="width:'+Math.min(100,sp/(hrs*3600000)*100)+'%"></i></div><div class="trow"><button type="button" class="main" data-a="toggle">'+(id==='sleep'?(s.run?'I’m awake':'Start sleep'):(s.run?'Pause':(sp>0?'Resume':'Start')))+'</button><button type="button" data-a="addt">+ Time</button><button type="button" data-a="subt">− Time</button><button type="button" data-a="reset">Reset</button></div>'+manLog(id)+'</div>'+ledHtml(id,now);
   if(ex){
     var r=S.run,n=cnt();
     t+='<button class="startbtn" id="startbtn" type="button" data-a="startex">'+((r&&!r.fin)?'Resume exercise · '+n+'/'+flat.length:(n===flat.length?'Start again':'Start exercise'))+'</button>';
@@ -606,17 +620,24 @@ function renderBlock(){
       t+=secHtml(sc[0],sc[1],chips);
     });
   }
-  var cu=L.filter(function(i){return i.c});
+  var cu=L.filter(function(i){return i.c&&i.g==null});
   if(cu.length){
     var cc='';cu.forEach(function(i){cc+=chipHtml('data-a="item" data-n="'+esc(i.n)+'"',i.n,(D.t[itemKey(id,i.n)]||{}).run?'●':'',!!D.it[itemKey(id,i.n)],true)});
     t+=secHtml('Your tasks','',cc);
   }else if(!ex&&!L.length){
     t+='<div class="empty">No tasks yet. Add what you plan to do in this block.</div>';
   }
+  (CG[id]||[]).forEach(function(g,gi){
+    var gms=g.items.reduce(function(a,n){return a+itemMs(itemKey(id,n),now)},0),gc='';g.items.forEach(function(n){gc+=chipHtml('data-a="item" data-n="'+esc(n)+'"',n,(D.t[itemKey(id,n)]||{}).run?'●':'',!!D.it[itemKey(id,n)],true)});
+    t+='<section class="sec"><div class="ph"><h2>'+esc(g.n)+'</h2>'+(gms>=60000?'<b>'+fm(gms/60000)+'</b>':'')+'<button type="button" class="lnk" data-a="delg" data-g="'+gi+'">Delete group</button></div><div class="grid">'+(gc||'<div class="empty" style="grid-column:1/-1">No tasks yet. Pick this group below when adding.</div>')+'</div></section>';
+  });
   var hc=hiddenCount(id);
   if(hc)t+='<button type="button" class="lnk" data-a="restore">Restore '+hc+' removed preset'+(hc>1?'s':'')+'</button>';
   t+='</div>';
-  t+='<form class="addf" id="addf"><input id="addi" type="text" placeholder="Add a task" aria-label="Add a task" maxlength="60" autocomplete="off"><button type="submit">Add</button></form>';
+  var gl=CG[id]||[],gsel='';
+  if(gl.length){gsel='<select id="addg" aria-label="Group">'+'<option value="-1">No group</option>'+gl.map(function(g,gi){return'<option value="'+gi+'"'+(curG===gi?' selected':'')+'>'+esc(g.n)+'</option>'}).join('')+'</select>'}
+  t+='<form class="addf" id="addf"><input id="addi" type="text" placeholder="Add a task" aria-label="Add a task" maxlength="60" autocomplete="off">'+gsel+'<button type="submit">Add</button></form>';
+  t+='<button type="button" class="lnk" data-a="newg" style="align-self:flex-start;flex:none">＋ New group</button>';
   t+='<button type="button" class="donebtn'+(s.done?' on':'')+'" data-a="done">'+(s.done?'✓ Block done · tap to undo':'Mark block done')+'</button>';
   bEl.innerHTML=t;
   var nb=bEl.querySelector('.bscroll');if(nb&&keep)nb.scrollTop=keep;
@@ -624,7 +645,7 @@ function renderBlock(){
 function manLog(id){
   var m=bs(id).man||[];if(!m.length)return'';
   var h='<div class="mlog">';
-  m.forEach(function(e,i){h+='<div class="mrow"><span>+'+e.m+' min</span><span class="lbl">'+new Date(e.at).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})+'</span><button type="button" data-a="delm" data-i="'+i+'" aria-label="Remove entry">✕</button></div>'});
+  m.forEach(function(e,i){h+='<div class="mrow"><span>'+(e.m<0?'−':'+')+Math.abs(e.m)+' min'+(e.k?' · task':'')+'</span><span class="lbl">'+new Date(e.at).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})+'</span><button type="button" data-a="delm" data-i="'+i+'" aria-label="Remove entry">✕</button></div>'});
   return h+'</div>';
 }
 var curI=null,itk=null;
@@ -633,10 +654,25 @@ function showItem(name,first){
   sheet.innerHTML='<div class="sh-head"><div><h3 id="shTitle">'+esc(name)+'</h3><p class="src">'+esc(b.n)+(dose?' · '+esc(dose):'')+'</p></div><button class="close" type="button" aria-label="Close">✕</button></div>'+
   '<div class="tbox" style="margin-top:14px"><div class="lbl">This task'+(pm?' · planned '+fmtH(pm/60):'')+'</div><div class="big" id="iT">0:00</div><div class="pg"><i id="iP" style="width:0%"></i></div>'+
   '<div class="trow"><button type="button" class="main" data-it="toggle">'+(t.run?'Pause':(t.spent>0?'Resume':'Start'))+'</button><button type="button" data-it="done">'+(dn?'✓ Done · undo':'Mark done')+'</button></div></div>'+
-  '<div class="tbox" style="margin-top:10px"><div class="lbl">'+esc(b.n)+' block · planned '+fmtH(hrsOf(id))+'</div><div class="big" id="iB" style="font-size:24px">0:00</div></div>'+itemLed(id,name,pm);
+  '<div class="tbox" style="margin-top:10px"><div class="lbl">'+esc(b.n)+' block · planned '+fmtH(hrsOf(id))+'</div><div class="big" id="iB" style="font-size:24px">0:00</div></div>'+itemLed(id,name,pm)+adjBox();
   if(first)open_();
   clearInterval(itk);itk=setInterval(tickItem,500);tickItem();
 }
+function adjBox(){
+  return '<div class="tbox" style="margin-top:10px"><div class="lbl">Adjust time on this task · also changes the block</div><div class="qrow" style="margin-top:8px">'+[-15,-5,5,15].map(function(m){return'<button type="button" data-ia="'+m+'">'+(m>0?'+':'−')+Math.abs(m)+'</button>'}).join('')+'</div>'+
+  '<div class="addf" style="margin-top:8px"><input id="iai" type="number" inputmode="numeric" min="1" max="1440" placeholder="Minutes" aria-label="Minutes"><button type="button" data-iaf="-1" style="background:transparent;color:var(--ink);border:1px solid var(--line)">− Remove</button><button type="button" data-iaf="1">+ Add</button></div></div>';
+}
+function adjItem(d){
+  var id=curB,k=itemKey(id,curI),t=ts(k),cur=itemMs(k)/60000;
+  d=Math.round(d);if(d<0)d=Math.max(d,-Math.floor(cur));if(!d)return;
+  t.man=(t.man||0)+d;
+  (bs(id).man=bs(id).man||[]).push({m:d,at:Date.now(),k:k});
+  dsave();renderBlock();showItem(curI,false);
+}
+sheet.addEventListener('click',function(e){
+  var b=e.target.closest('[data-ia]');if(b){adjItem(+b.dataset.ia);return}
+  b=e.target.closest('[data-iaf]');if(b){var v=Math.round(+document.getElementById('iai').value);if(v>0&&v<=1440)adjItem(v*(+b.dataset.iaf))}
+});
 function tickItem(){
   if(!curI||!sheet.classList.contains('on')){clearInterval(itk);return}
   var id=curB,k=itemKey(id,curI),now=Date.now(),sp=itemMs(k,now),pm=planMin(itemDose(id,curI)),a=document.getElementById('iT'),p=document.getElementById('iP'),c=document.getElementById('iB');
@@ -659,16 +695,20 @@ function doneItem(){
 function showExtend(){
   var id=curB,x=xtra(id);
   sheet.innerHTML='<div class="sh-head"><div><h3 id="shTitle">Planned time</h3><p class="src">'+esc(BL[id].n)+' · '+fmtH(hrsOf(id))+(x?' ('+(x>0?'+':'')+x+' min changed)':'')+'</p></div><button class="close" type="button" aria-label="Close">✕</button></div>'+
-  '<div class="qrow">'+[-15,15,30,60].map(function(m){return'<button type="button" data-x="'+m+'">'+(m>0?'+':'−')+Math.abs(m)+'</button>'}).join('')+'</div>'+
+  '<div class="qrow">'+[-30,-15,-5,5,15,30].map(function(m){return'<button type="button" data-x="'+m+'">'+(m>0?'+':'−')+Math.abs(m)+'</button>'}).join('')+'</div>'+
   '<div class="nav"><button type="button" data-x="0">Back to default</button></div>';
   open_();
 }
-function showAddTime(){
-  var b=BL[curB];
-  sheet.innerHTML='<div class="sh-head"><div><h3 id="shTitle">Add time</h3><p class="src">'+esc(b.n)+' · logged by hand</p></div><button class="close" type="button" aria-label="Close">✕</button></div>'+
-  '<div class="qrow">'+[5,10,15,30,60].map(function(m){return'<button type="button" data-q="'+m+'">+'+m+'</button>'}).join('')+'</div>'+
-  '<form class="addf" id="timef" style="margin-top:10px"><input id="timei" type="number" inputmode="numeric" min="1" max="1440" placeholder="Minutes" aria-label="Minutes"><button type="submit">Add</button></form>';
+function showAddTime(sg){
+  var b=BL[curB],rm=sg<0;
+  sheet.innerHTML='<div class="sh-head"><div><h3 id="shTitle">'+(rm?'Remove time':'Add time')+'</h3><p class="src">'+esc(b.n)+' · '+(rm?'taken off the time logged · returns to unlogged time':'logged by hand · comes out of unlogged time')+'</p></div><button class="close" type="button" aria-label="Close">✕</button></div>'+
+  '<div class="qrow">'+[5,10,15,30,60].map(function(m){return'<button type="button" data-q="'+m+'">'+(rm?'−':'+')+m+'</button>'}).join('')+'</div>'+
+  '<form class="addf" id="timef" data-sign="'+(rm?-1:1)+'" style="margin-top:10px"><input id="timei" type="number" inputmode="numeric" min="1" max="1440" placeholder="Minutes" aria-label="Minutes"><button type="submit">'+(rm?'Remove':'Add')+'</button></form>';
   open_();document.getElementById('timei').focus();
+}
+function showNewGroup(){
+  sheet.innerHTML='<div class="sh-head"><div><h3 id="shTitle">New group</h3><p class="src">'+esc(BL[curB].n)+' · then choose it when adding a task</p></div><button class="close" type="button" aria-label="Close">✕</button></div><form class="addf" id="grpf" style="margin-top:12px"><input id="grpi" type="text" placeholder="Group name" maxlength="40" autocomplete="off"><button type="submit">Add</button></form>';
+  open_();document.getElementById('grpi').focus();
 }
 function tickBlock(){
   if(!curB)return;
@@ -686,18 +726,23 @@ bEl.addEventListener('click',function(e){
   if(a==='toggle'){if(s.run){stopRun(id,s,now);pauseItems(id)}else{pauseAll();s.run=now}dsave();renderBlock();return}
   if(a==='reset'){s.spent=0;s.run=null;s.man=[];s.sess=[];D.seg=(D.seg||[]).filter(function(g){return g.id!==id});pauseItems(id);Object.keys(D.t).forEach(function(k){if(k.split('|')[1]===id)delete D.t[k]});dsave();renderBlock();return}
   if(a==='ext'){opener=b;showExtend();return}
-  if(a==='addt'){opener=b;showAddTime();return}
+  if(a==='addt'){opener=b;showAddTime(1);return}
+  if(a==='subt'){opener=b;showAddTime(-1);return}
   if(a==='delm'){(s.man||[]).splice(+b.dataset.i,1);dsave();renderBlock();return}
   if(a==='item'){opener=b;showItem(b.dataset.n,true);return}
   if(a==='restore'){restorePresets(id);dsave();renderBlock();return}
-  if(a==='del'){var n=b.dataset.n;if(b.dataset.p){hidePreset(id,n)}else{CU[id]=(CU[id]||[]).filter(function(x){return x!==n});delete D.it[itemKey(id,n)];csave()}dsave();renderBlock();return}
+  if(a==='del'){var n=b.dataset.n;if(b.dataset.p){hidePreset(id,n)}else{removeCustom(id,n)}dsave();renderBlock();return}
+  if(a==='newg'){opener=b;showNewGroup();return}
+  if(a==='delg'){var gi_=+b.dataset.g,g_=(CG[id]||[])[gi_];if(g_){CU[id]=(CU[id]||[]).concat(g_.items.filter(function(n){return(CU[id]||[]).indexOf(n)<0}));CG[id].splice(gi_,1);curG=-1;csave();gsave();renderBlock()}return}
   if(a==='done'){s.done=!s.done;if(s.done&&s.run){stopRun(id,s,now);pauseItems(id)}dsave();renderBlock()}
 });
+bEl.addEventListener('change',function(e){if(e.target.id==='addg')curG=+e.target.value});
 bEl.addEventListener('submit',function(e){
   e.preventDefault();
   var i=document.getElementById('addi'),v=i.value.trim();if(!v)return;
   var id=curB;
-  if(listOf(id).every(function(i){return i.n!==v})){(CU[id]=CU[id]||[]).push(v);csave()}
+  var sg=document.getElementById('addg'),gi=sg?+sg.value:-1;curG=gi;
+  if(listOf(id).every(function(i){return i.n!==v})){if(gi>=0&&CG[id]&&CG[id][gi])CG[id][gi].items.push(v);else(CU[id]=CU[id]||[]).push(v);csave();gsave()}
   renderBlock();document.getElementById('addi').focus();
 });
 document.getElementById('dayList').addEventListener('click',function(e){var c=e.target.closest('.card');if(c)openBlock(c.dataset.b)});
@@ -719,11 +764,11 @@ function exOf(date){
 }
 function spentE(e,id,now){
   var b=(e.b||{})[id];if(!b)return 0;
-  return b.spent+(b.man||[]).reduce(function(a,x){return a+x.m*60000},0)+(e.live&&b.run?now-b.run:0);
+  return Math.max(0,b.spent+(b.man||[]).reduce(function(a,x){return a+x.m*60000},0)+(e.live&&b.run?now-b.run:0));
 }
 function itemsFor(id,ty){
   var o=[];secsOf(id,ty).forEach(function(sc){sc[2].forEach(function(it){o.push(it[0])})});
-  (CU[id]||[]).forEach(function(n){o.push(n)});return o;
+  (CU[id]||[]).forEach(function(n){o.push(n)});(CG[id]||[]).forEach(function(g){g.items.forEach(function(n){o.push(n)})});return o;
 }
 function scoreOf(e){
   var ty=typeOf(e.date),now=Date.now(),sum=0,tot=0,ex=exOf(e.date);
@@ -762,7 +807,7 @@ function renderHistDay(){
   var sg=(e.seg||[]).slice(),bar='',tr=0,leg='',sec='',ex=exOf(hd);
   if(e.live)Object.keys(e.b||{}).forEach(function(k){if(e.b[k].run)sg.push({id:k,s:e.b[k].run,e:now})});
   sg.forEach(function(g){var a=Math.max(g.s,st),z=Math.min(g.e,en);if(z<=a)return;tr+=z-a;bar+='<i style="left:'+(a-st)/W*100+'%;width:'+Math.max(.2,(z-a)/W*100)+'%;background:'+colOf(g.id)+'"></i>'});
-  var elapsed=e.live?now-st:W;
+  var elapsed=e.live?now-st:W,trk=Object.keys(BL).reduce(function(a,id){return a+spentE(e,id,now)},0);
   sch.forEach(function(r){
     var id=r[0],b=BL[id],bb=(e.b||{})[id]||{},sp=spentE(e,id,now),items=itemsFor(id,ty),rows='';
     if(sp>0)leg+='<span class="lg"><i style="background:'+colOf(id)+'"></i>'+esc(b.n)+' '+fm(sp/60000)+'</span>';
@@ -781,7 +826,7 @@ function renderHistDay(){
   });
   hEl.innerHTML='<div class="top"><div class="tl"><button class="back" type="button" data-h="back" aria-label="Back to calendar">‹</button><div><h1>'+esc(pd(hd).toLocaleDateString(undefined,{weekday:'long',day:'numeric',month:'short'}))+'</h1><p class="sub">'+(ty==='wk'?'Sun–Thu plan':'Fri–Sat plan')+(e.live?' · today, still running':'')+'</p></div></div></div>'+
   '<div class="bscroll"><div class="hsec"><div class="hbig">'+sc+'<span class="lbl" style="font-size:14px;font-weight:400"> / 100</span></div><p class="sub">'+evNote(e,ds)+'</p></div>'+
-  '<div class="hsec"><h2>24-hour timeline</h2><div class="clock">'+bar+'</div><div class="ctk" style="margin-top:4px"><span>12a</span><span>6a</span><span>12p</span><span>6p</span><span>12a</span></div><div style="margin-top:8px">'+(leg||'<span class="empty">No time tracked.</span>')+'</div><p class="sub" style="margin-top:8px">Tracked '+fm(tr/60000)+' · untracked '+fm(Math.max(0,elapsed-tr)/60000)+'</p></div>'+sec+'</div>';
+  '<div class="hsec"><h2>24-hour timeline</h2><div class="clock">'+bar+'</div><div class="ctk" style="margin-top:4px"><span>12a</span><span>6a</span><span>12p</span><span>6p</span><span>12a</span></div><div style="margin-top:8px">'+(leg||'<span class="empty">No time tracked.</span>')+'</div><p class="sub" style="margin-top:8px">Logged '+fm(trk/60000)+' · unlogged '+fm(Math.max(0,elapsed-trk)/60000)+'</p></div>'+sec+'</div>';
 }
 hEl.addEventListener('click',function(e){
   var b=e.target.closest('[data-h]');if(!b||b.disabled)return;
@@ -906,8 +951,9 @@ sheet.addEventListener('click',function(e){var b=e.target.closest('[data-it]');i
 sheet.addEventListener('submit',function(e){
   e.preventDefault();var f=e.target;
   if(f.id==='timef'){
-    var v=Math.round(+document.getElementById('timei').value);if(!(v>0&&v<=1440))return;
-    var s=bs(curB);(s.man=s.man||[]).push({m:v,at:Date.now()});dsave();renderBlock();close_();return;
+    var v=Math.round(+document.getElementById('timei').value),sgn=f.dataset.sign==='-1'?-1:1;if(!(v>0&&v<=1440))return;
+    if(sgn<0){v=Math.min(v,Math.floor(spentMs(curB)/60000));if(v<=0){close_();return}}
+    var s=bs(curB);(s.man=s.man||[]).push({m:v*sgn,at:Date.now()});dsave();renderBlock();close_();return;
   }
   if(f.id==='manf'){
     var mv=Math.round(+document.getElementById('mani').value);if(!(mv>0&&mv<=1440))return;
@@ -916,12 +962,21 @@ sheet.addEventListener('submit',function(e){
     bb.man=(bb.man||[]).filter(function(e){return e.k!==kk});bb.man.push({m:mv,at:Date.now(),k:kk});
     dsave();renderBlock();showItem(curI,false);return;
   }
+  if(f.id==='grpf'){
+    var gn=document.getElementById('grpi').value.trim();if(!gn)return;
+    var ga=(CG[curB]=CG[curB]||[]);if(ga.every(function(g){return g.n!==gn})){ga.push({n:gn,items:[]});gsave();curG=ga.length-1}
+    renderBlock();close_();return;
+  }
   if(f.id==='chkf'){
     var n=document.getElementById('chki').value.trim();if(!n)return;
     if(listOf(curB).every(function(x){return x.n!==n})){(CU[curB]=CU[curB]||[]).push(n);csave()}
     renderBlock();showChecklist(false);var ni=document.getElementById('chki');if(ni)ni.focus();
   }
 });
+setInterval(tickUnl,1000);
+/* Forms may be blocked in sandboxed previews, so submit them by script instead. */
+document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('button[type="submit"]');if(b&&b.form){e.preventDefault();b.form.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}))}});
+document.addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.isComposing&&e.target.tagName==='INPUT'&&e.target.form){e.preventDefault();e.target.form.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}))}});
 window.addEventListener('pagehide',dsave);
 if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})})}
 </script>
