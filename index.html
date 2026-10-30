@@ -143,6 +143,7 @@ h1{margin:0;font-size:clamp(20px,3.4vh,26px);line-height:1.1;font-weight:600;let
 .qrow button{flex:1;border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:10px;padding:10px 2px;font:400 14px inherit;cursor:pointer}
 .addf{display:flex;gap:6px;flex:none}
 .addf input{flex:1;min-width:0;border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:10px;padding:10px 12px;font:400 15px inherit}
+.addf input.t{padding:10px 4px;text-align:center;font-size:14px}
 .addf select{flex:none;max-width:36%;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;padding:0 8px;font:400 14px inherit}
 .addf button{flex:none;border:0;background:var(--ink);color:var(--bg);border-radius:10px;padding:0 18px;font:600 14px inherit;cursor:pointer}
 .empty{color:var(--mute);font-size:13.5px;padding:4px 2px}
@@ -166,7 +167,8 @@ h1{margin:0;font-size:clamp(20px,3.4vh,26px);line-height:1.1;font-weight:600;let
 .hsec .mrow.ed{cursor:pointer;-webkit-tap-highlight-color:transparent}
 .hsec .mrow.ed:active{opacity:.6}
 .hsec .mrow.addt{gap:6px;padding:8px 0 0;cursor:default}
-.hsec .mrow.addt input{width:70px;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--ink);padding:7px 8px;font:400 13px inherit}
+.hsec .mrow.addt{flex-wrap:wrap}
+.hsec .mrow.addt input{width:56px;text-align:center;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--ink);padding:7px 8px;font:400 13px inherit}
 .hsec .mrow.addt button{border:1px solid var(--line);border-radius:10px;padding:7px 12px;color:var(--ink);font-size:13px}
 .edhint{font-size:12px;color:var(--mute);margin:0 0 2px}
 .hbig{font-size:48px;font-weight:800;letter-spacing:-.03em;line-height:1}
@@ -411,7 +413,7 @@ sheet.addEventListener('click',function(e){
   c=e.target.closest('[data-x]');
   if(c){var xv=+c.dataset.x,kx=T+'|'+curB;if(xv===0)delete PL[kx];else{var nx=(PL[kx]||0)+xv;if(hrsOf(curB)+xv/60<.25){return}if(nx===0)delete PL[kx];else PL[kx]=nx}psave();renderBlock();showExtend();return}
   c=e.target.closest('[data-q]');
-  if(c){var ti=document.getElementById('timei');ti.value=(+ti.value||0)+(+c.dataset.q);ti.focus();return}
+  if(c){var ti=document.getElementById('timeim');ti.value=(+ti.value||0)+(+c.dataset.q);ti.focus();return}
   c=e.target.closest('[data-k]');
   if(c){var k=itemKey(curB,c.dataset.k);if(D.it[k])delete D.it[k];else D.it[k]=1;dsave();renderBlock();showChecklist(false);return}
   if(e.target.closest('[data-reset]')){
@@ -558,7 +560,7 @@ function ledHtml(id,now){
 function itemLed(id,name,pm){
   if(!(pm>0))return'';
   var d=itemDiff(id,name);
-  return '<form class="addf" id="manf" style="margin-top:10px"><input id="mani" type="number" inputmode="numeric" min="1" max="1440" placeholder="Check in: minutes it took" aria-label="Minutes it took"><button type="submit">Check in</button></form>'+
+  return '<form class="addf" id="manf" style="margin-top:10px">'+hms('mani')+'<button type="submit">Check in</button></form>'+
   '<div class="alt" style="margin-top:10px">'+(d===null?'Finish under '+fmtH(pm/60)+' and the spare minutes go to your reserve. Go over and the extra comes out of reserve, then misc.':(d>=0?'<b>+'+fm(d)+'</b> added to reserve':'<b>'+fm(-d)+'</b> over · taken from reserve, then misc'))+'</div>';
 }
 function show(v){
@@ -664,20 +666,22 @@ function showItem(name,first){
   if(first)open_();
   clearInterval(itk);itk=setInterval(tickItem,500);tickItem();
 }
+function hms(p){return [['h','hr','Hours'],['m','min','Minutes'],['s','sec','Seconds']].map(function(x){return '<input class="t" id="'+p+x[0]+'" type="number" inputmode="numeric" min="0" placeholder="'+x[1]+'" aria-label="'+x[2]+'">'}).join('')}
+function hmsV(p){function g(k){var el=document.getElementById(p+k);return Math.max(0,+(el&&el.value)||0)}return Math.round((g('h')*60+g('m')+g('s')/60)*60)/60}
 function adjBox(){
   return '<div class="tbox" style="margin-top:10px"><div class="lbl">Adjust time on this task · also changes the block</div><div class="qrow" style="margin-top:8px">'+[-15,-5,5,15].map(function(m){return'<button type="button" data-ia="'+m+'">'+(m>0?'+':'−')+Math.abs(m)+'</button>'}).join('')+'</div>'+
-  '<div class="addf" style="margin-top:8px"><input id="iai" type="number" inputmode="numeric" min="1" max="1440" placeholder="Minutes" aria-label="Minutes"><button type="button" data-iaf="-1" style="background:transparent;color:var(--ink);border:1px solid var(--line)">− Remove</button><button type="button" data-iaf="1">+ Add</button></div></div>';
+  '<div class="addf" style="margin-top:8px">'+hms('iai')+'<button type="button" data-iaf="-1" style="background:transparent;color:var(--ink);border:1px solid var(--line)">− Remove</button><button type="button" data-iaf="1">+ Add</button></div></div>';
 }
 function adjItem(d){
   var id=curB,k=itemKey(id,curI),t=ts(k),cur=itemMs(k)/60000;
-  d=Math.round(d);if(d<0)d=Math.max(d,-Math.floor(cur));if(!d)return;
+  d=Math.round(d*60)/60;if(d<0)d=Math.max(d,-cur);if(!d)return;
   t.man=(t.man||0)+d;
   (bs(id).man=bs(id).man||[]).push({m:d,at:Date.now(),k:k});
   dsave();renderBlock();showItem(curI,false);
 }
 sheet.addEventListener('click',function(e){
   var b=e.target.closest('[data-ia]');if(b){adjItem(+b.dataset.ia);return}
-  b=e.target.closest('[data-iaf]');if(b){var v=Math.round(+document.getElementById('iai').value);if(v>0&&v<=1440)adjItem(v*(+b.dataset.iaf))}
+  b=e.target.closest('[data-iaf]');if(b){var v=hmsV('iai');if(v>0&&v<=1440)adjItem(v*(+b.dataset.iaf))}
 });
 function tickItem(){
   if(!curI||!sheet.classList.contains('on')){clearInterval(itk);return}
@@ -709,8 +713,8 @@ function showAddTime(sg){
   var b=BL[curB],rm=sg<0;
   sheet.innerHTML='<div class="sh-head"><div><h3 id="shTitle">'+(rm?'Remove time':'Add time')+'</h3><p class="src">'+esc(b.n)+' · '+(rm?'taken off the time logged · returns to unlogged time':'logged by hand · comes out of unlogged time')+'</p></div><button class="close" type="button" aria-label="Close">✕</button></div>'+
   '<div class="qrow">'+[5,10,15,30,60].map(function(m){return'<button type="button" data-q="'+m+'">'+(rm?'−':'+')+m+'</button>'}).join('')+'</div>'+
-  '<form class="addf" id="timef" data-sign="'+(rm?-1:1)+'" style="margin-top:10px"><input id="timei" type="number" inputmode="numeric" min="1" max="1440" placeholder="Minutes" aria-label="Minutes"><button type="submit">'+(rm?'Remove':'Add')+'</button></form>';
-  open_();document.getElementById('timei').focus();
+  '<form class="addf" id="timef" data-sign="'+(rm?-1:1)+'" style="margin-top:10px">'+hms('timei')+'<button type="submit">'+(rm?'Remove':'Add')+'</button></form>';
+  open_();document.getElementById('timeim').focus();
 }
 function showNewGroup(){
   sheet.innerHTML='<div class="sh-head"><div><h3 id="shTitle">New group</h3><p class="src">'+esc(BL[curB].n)+' · then choose it when adding a task</p></div><button class="close" type="button" aria-label="Close">✕</button></div><form class="addf" id="grpf" style="margin-top:12px"><input id="grpi" type="text" placeholder="Group name" maxlength="40" autocomplete="off"><button type="submit">Add</button></form>';
@@ -829,10 +833,10 @@ function renderHistDay(){
       all.forEach(function(n){rows+='<div class="mrow ed" role="checkbox" aria-checked="'+(ex.indexOf(n)>=0?'true':'false')+'" data-h="ex" data-n="'+esc(n)+'"><span>'+(ex.indexOf(n)>=0?'✓ ':'○ ')+esc(n)+'</span></div>'});
     }
     var done=bb.done||(b.ex?ex.length>=flat.length&&flat.length>0:false);
-    sec+='<section class="hsec"><div class="ph" style="padding:0 0 6px"><h2>'+(done?'✓ ':'')+esc(b.n)+'</h2><b>'+(sp>0?fm(sp/60000)+' of ':'')+fmtH(r[1])+'</b></div>'+(rows||'<div class="empty" style="padding:0">'+(sp>0?'Time tracked, no checklist.':'No records.')+'</div>')+'<div class="mrow addt"><input type="number" inputmode="numeric" min="1" placeholder="min" id="mn-'+id+'" aria-label="Minutes for '+esc(b.n)+'"><button type="button" data-h="addt" data-id="'+id+'" data-s="1">+ Add time</button><button type="button" data-h="addt" data-id="'+id+'" data-s="-1">− Remove</button></div></section>';
+    sec+='<section class="hsec"><div class="ph" style="padding:0 0 6px"><h2>'+(done?'✓ ':'')+esc(b.n)+'</h2><b>'+(sp>0?fm(sp/60000)+' of ':'')+fmtH(r[1])+'</b></div>'+(rows||'<div class="empty" style="padding:0">'+(sp>0?'Time tracked, no checklist.':'No records.')+'</div>')+'<div class="mrow addt"><input type="number" inputmode="numeric" min="0" placeholder="hr" id="mh-'+id+'" aria-label="Hours for '+esc(b.n)+'"><input type="number" inputmode="numeric" min="0" placeholder="min" id="mn-'+id+'" aria-label="Minutes for '+esc(b.n)+'"><input type="number" inputmode="numeric" min="0" placeholder="sec" id="ms-'+id+'" aria-label="Seconds for '+esc(b.n)+'"><button type="button" data-h="addt" data-id="'+id+'" data-s="1">+ Add time</button><button type="button" data-h="addt" data-id="'+id+'" data-s="-1">− Remove</button></div></section>';
   });
   hEl.innerHTML='<div class="top"><div class="tl"><button class="back" type="button" data-h="back" aria-label="Back to calendar">‹</button><div><h1>'+esc(pd(hd).toLocaleDateString(undefined,{weekday:'long',day:'numeric',month:'short'}))+'</h1><p class="sub">'+(ty==='wk'?'Sun–Thu plan':'Fri–Sat plan')+(e.live?' · today, still running':'')+'</p></div></div></div>'+
-  '<div class="bscroll"><p class="edhint">Tap a task to tick or untick it. Use “Add time” to log minutes you forgot.</p><div class="hsec"><div class="hbig">'+sc+'<span class="lbl" style="font-size:14px;font-weight:400"> / 100</span></div><p class="sub">'+evNote(e,ds)+'</p></div>'+
+  '<div class="bscroll"><p class="edhint">Tap a task to tick or untick it. Use “Add time” to log hours, minutes and seconds you forgot.</p><div class="hsec"><div class="hbig">'+sc+'<span class="lbl" style="font-size:14px;font-weight:400"> / 100</span></div><p class="sub">'+evNote(e,ds)+'</p></div>'+
   '<div class="hsec"><h2>24-hour timeline</h2><div class="clock">'+bar+'</div><div class="ctk" style="margin-top:4px"><span>12a</span><span>6a</span><span>12p</span><span>6p</span><span>12a</span></div><div style="margin-top:8px">'+(leg||'<span class="empty">No time tracked.</span>')+'</div><p class="sub" style="margin-top:8px">Logged '+fm(trk/60000)+' · unlogged '+fm(Math.max(0,elapsed-trk)/60000)+'</p></div>'+sec+'</div>';
 }
 function editDay(date,fn){
@@ -857,7 +861,8 @@ hEl.addEventListener('click',function(e){
   var a=b.dataset.h;
   if(a==='tog'&&hd){var ty=typeOf(hd),k=ty+'|'+b.dataset.id+'|'+b.dataset.n;editDay(hd,function(z){z.it=z.it||{};if(z.it[k])delete z.it[k];else z.it[k]=1});rerenderKeep();return}
   if(a==='ex'&&hd){toggleEx(hd,b.dataset.n);rerenderKeep();return}
-  if(a==='addt'&&hd){var id=b.dataset.id,inp=document.getElementById('mn-'+id),v=Math.round(+(inp&&inp.value));if(!v||v<1)return;v*=+b.dataset.s;var dt=hd;
+  if(a==='addt'&&hd){var id=b.dataset.id;function nv(k){var el=document.getElementById(k+'-'+id);return Math.max(0,+(el&&el.value)||0)}
+    var v=nv('mh')*60+nv('mn')+nv('ms')/60;if(!(v>0))return;v*=+b.dataset.s;var dt=hd;
     editDay(dt,function(z){z.b=z.b||{};var s=z.b[id]=z.b[id]||{spent:0,run:null,done:false,man:[]};(s.man=s.man||[]).push({m:v,at:pd(dt).getTime()+432e5})});rerenderKeep();return}
   if(a==='home'){hd=null;show('home');return}
   if(a==='back'){hd=null;renderHist();return}
@@ -979,12 +984,12 @@ sheet.addEventListener('click',function(e){var b=e.target.closest('[data-it]');i
 sheet.addEventListener('submit',function(e){
   e.preventDefault();var f=e.target;
   if(f.id==='timef'){
-    var v=Math.round(+document.getElementById('timei').value),sgn=f.dataset.sign==='-1'?-1:1;if(!(v>0&&v<=1440))return;
-    if(sgn<0){v=Math.min(v,Math.floor(spentMs(curB)/60000));if(v<=0){close_();return}}
+    var v=hmsV('timei'),sgn=f.dataset.sign==='-1'?-1:1;if(!(v>0&&v<=1440))return;
+    if(sgn<0){v=Math.min(v,spentMs(curB)/60000);if(v<=0.001){close_();return}}
     var s=bs(curB);(s.man=s.man||[]).push({m:v*sgn,at:Date.now()});dsave();renderBlock();close_();return;
   }
   if(f.id==='manf'){
-    var mv=Math.round(+document.getElementById('mani').value);if(!(mv>0&&mv<=1440))return;
+    var mv=hmsV('mani');if(!(mv>0&&mv<=1440))return;
     var kk=itemKey(curB,curI),tt=ts(kk),bb=bs(curB);
     tt.run=null;tt.spent=0;tt.man=mv;D.it[kk]=1;
     bb.man=(bb.man||[]).filter(function(e){return e.k!==kk});bb.man.push({m:mv,at:Date.now(),k:kk});
